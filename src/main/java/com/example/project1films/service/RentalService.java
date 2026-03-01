@@ -1,15 +1,13 @@
 package com.example.project1films.service;
 
-import com.example.project1films.entity.Rental;
+import com.example.project1films.dto.request.RentalCreateRequest;
+import com.example.project1films.dto.response.RentalResponse;
 import java.util.List;
 
 public interface RentalService {
 
-    List<Rental> getAllRentals();
-
-    Rental getRentalById(Long id);
-
-    Rental createRental(Long userId, Long movieId);
-
+    RentalResponse createRental(RentalCreateRequest request);
+    List<RentalResponse> getAllRentals();
+    RentalResponse getRental(Long id);
     void deleteRental(Long id);
 }

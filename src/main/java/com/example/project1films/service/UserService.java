@@ -1,19 +1,20 @@
 package com.example.project1films.service;
 
-import com.example.project1films.entity.User;
+import com.example.project1films.dto.request.UserCreateRequest;
+import com.example.project1films.dto.request.UserUpdateRequest;
+import com.example.project1films.dto.response.UserResponse;
+
 import java.util.List;
 
 public interface UserService {
 
-    List<User> getAllUsers();
+    UserResponse createUser(UserCreateRequest request);
 
-    User getUserById(Long id);
+    UserResponse getUser(Long id);
 
-    User createUser(User user);
-
-    User updateUser(Long id, User user);
+    List<UserResponse> getAllUsers();
 
     void deleteUser(Long id);
 
-    String decryptEmail(String email);
+    UserResponse updateUser(Long id, UserUpdateRequest request);
 }

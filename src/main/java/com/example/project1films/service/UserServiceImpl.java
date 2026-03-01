@@ -1,59 +1,113 @@
 package com.example.project1films.service;
 
+import com.example.project1films.dto.request.UserCreateRequest;
+import com.example.project1films.dto.request.UserUpdateRequest;
+import com.example.project1films.dto.response.UserResponse;
 import com.example.project1films.entity.User;
 import com.example.project1films.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.example.project1films.security.EncryptionService;
+
 import org.springframework.stereotype.Service;
 
-import java.util.Base64;
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final EncryptionService encryptionService;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository,
+                           EncryptionService encryptionService) {
+
         this.userRepository = userRepository;
+        this.encryptionService = encryptionService;
     }
 
     @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public UserResponse getUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow();
+
+        return mapToResponse(user);
     }
 
-    @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-    }
+
 
     @Override
-    public User createUser(User user) {
-        user.setEmail(encryptEmail(user.getEmail()));
-        return userRepository.save(user);
-    }
+    public List<UserResponse> getAllUsers() {
 
-    @Override
-    public User updateUser(Long id, User updatedUser) {
-        User existing = getUserById(id);
-        existing.setName(updatedUser.getName());
-        existing.setRole(updatedUser.getRole());
-        existing.setEmail(encryptEmail(updatedUser.getEmail()));
-        return userRepository.save(existing);
+        return userRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     @Override
     public void deleteUser(Long id) {
-        User existing = getUserById(id);
-        userRepository.delete(existing);
+
+        userRepository.deleteById(id);
     }
 
-    public String encryptEmail(String email) {
-        return Base64.getEncoder().encodeToString(email.getBytes());
+    private UserResponse mapToResponse(User user) {
+
+        UserResponse response = new UserResponse();
+
+        response.setId(user.getId());
+        response.setName(user.getName());
+
+        response.setEmail(
+                encryptionService.decrypt(user.getEmail())
+        );
+
+        response.setRole(user.getRole());
+
+        return response;
     }
 
-    public String decryptEmail(String encryptedEmail) {
-        return new String(Base64.getDecoder().decode(encryptedEmail));
+    @Override
+    public UserResponse createUser(UserCreateRequest request) {
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setRole(request.getRole());
+
+        // Шифруем email
+        user.setEmail(encryptionService.encrypt(request.getEmail()));
+
+        User saved = userRepository.save(user);
+
+        return mapToResponse(saved);
+    }
+
+    @Override
+    public UserResponse updateUser(
+            Long id,
+            UserUpdateRequest request) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+
+        if (request.getEmail() != null) {
+
+            String encryptedEmail =
+                    encryptionService.encrypt(request.getEmail());
+
+            user.setEmail(encryptedEmail);
+        }
+
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        User updated = userRepository.save(user);
+
+        return mapToResponse(updated);
     }
 }

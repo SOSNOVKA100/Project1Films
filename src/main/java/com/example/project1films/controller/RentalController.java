@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/rentals")
+@RequestMapping("/renta")
 public class RentalController {
 
     private final RentalRepository repo;

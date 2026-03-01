@@ -1,13 +1,15 @@
 package com.example.project1films.controller;
 
-import com.example.project1films.entity.Movie;
+import com.example.project1films.dto.request.MovieCreateRequest;
+import com.example.project1films.dto.request.MovieUpdateRequest;
+import com.example.project1films.dto.response.MovieResponse;
 import com.example.project1films.service.MovieService;
-import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/movies2")
+@RequestMapping("/movies")
 public class MovieControllerWithService {
 
     private final MovieService movieService;
@@ -16,25 +18,25 @@ public class MovieControllerWithService {
         this.movieService = movieService;
     }
 
+    @PostMapping
+    public MovieResponse createMovie(@RequestBody MovieCreateRequest request) {
+        return movieService.createMovie(request);
+    }
+
     @GetMapping
-    public List<Movie> getAllMovies() {
+    public List<MovieResponse> getAllMovies() {
         return movieService.getAllMovies();
     }
 
     @GetMapping("/{id}")
-    public Movie getMovie(@PathVariable Long id) {
-        return movieService.getMovieById(id);
-    }
-
-    @PostMapping
-    public Movie createMovie(@RequestBody Movie movie) {
-        return movieService.createMovie(movie);
+    public MovieResponse getMovie(@PathVariable Long id) {
+        return movieService.getMovie(id);
     }
 
     @PutMapping("/{id}")
-    public Movie updateMovie(@PathVariable Long id,
-                             @RequestBody Movie movie) {
-        return movieService.updateMovie(id, movie);
+    public MovieResponse updateMovie(@PathVariable Long id,
+                                     @RequestBody MovieUpdateRequest request) {
+        return movieService.updateMovie(id, request);
     }
 
     @DeleteMapping("/{id}")
