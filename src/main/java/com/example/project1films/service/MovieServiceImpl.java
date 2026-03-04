@@ -5,6 +5,10 @@ import com.example.project1films.dto.request.MovieUpdateRequest;
 import com.example.project1films.dto.response.MovieResponse;
 import com.example.project1films.entity.Movie;
 import com.example.project1films.repository.MovieRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import com.example.project1films.specification.MovieSpecification;
 
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -70,4 +74,19 @@ public class MovieServiceImpl implements MovieService {
         response.setAvailable(movie.getAvailable());
         return response;
     }
+    @Override
+    public Page<MovieResponse> getMovies(
+            String genre,
+            String search,
+            Pageable pageable
+    ) {
+
+        Specification<Movie> spec = Specification
+                .where(MovieSpecification.hasGenre(genre))
+                .and(MovieSpecification.titleContains(search));
+
+        return movieRepository.findAll(spec, pageable)
+                .map(this::mapToResponse);
+    }
+
 }

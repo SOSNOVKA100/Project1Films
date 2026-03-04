@@ -4,12 +4,15 @@ import com.example.project1films.dto.request.MovieCreateRequest;
 import com.example.project1films.dto.request.MovieUpdateRequest;
 import com.example.project1films.dto.response.MovieResponse;
 import com.example.project1films.service.MovieService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
+
 
 @RestController
-@RequestMapping("/movies")
+@RequestMapping("/api/movies")
 public class MovieControllerWithService {
 
     private final MovieService movieService;
@@ -23,10 +26,7 @@ public class MovieControllerWithService {
         return movieService.createMovie(request);
     }
 
-    @GetMapping
-    public List<MovieResponse> getAllMovies() {
-        return movieService.getAllMovies();
-    }
+
 
     @GetMapping("/{id}")
     public MovieResponse getMovie(@PathVariable Long id) {
@@ -43,4 +43,19 @@ public class MovieControllerWithService {
     public void deleteMovie(@PathVariable Long id) {
         movieService.deleteMovie(id);
     }
+
+
+    @GetMapping
+    public Page<MovieResponse> getMovies(
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        return movieService.getMovies(genre, search, pageable);
+    }
+
+    // old @GetMapping
+    // public List<MovieResponse> getAllMovies() {
+    //    return movieService.getAllMovies();
+    //  }
 }

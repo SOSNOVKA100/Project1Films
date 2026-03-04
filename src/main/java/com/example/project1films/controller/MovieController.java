@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/movies")
+//@RestController
+//@RequestMapping("/moviesold")
 public class MovieController {
 
     private final MovieRepository repo;
@@ -16,12 +16,12 @@ public class MovieController {
         this.repo = repo;
     }
 
-    @GetMapping
+   // @GetMapping
     public List<Movie> getAllMovies() {
         return repo.findAll();
     }
 
-    @PostMapping
+   // @PostMapping
     public Movie createMovie(@RequestBody Movie movie) {
         return repo.save(movie);
     }
