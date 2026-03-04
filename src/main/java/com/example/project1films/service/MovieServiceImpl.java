@@ -8,7 +8,6 @@ import com.example.project1films.repository.MovieRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import com.example.project1films.specification.MovieSpecification;
 
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -34,12 +33,7 @@ public class MovieServiceImpl implements MovieService {
         return mapToResponse(saved);
     }
 
-    @Override
-    public List<MovieResponse> getAllMovies() {
-        return movieRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+
 
     @Override
     public MovieResponse getMovie(Long id) {
@@ -81,9 +75,21 @@ public class MovieServiceImpl implements MovieService {
             Pageable pageable
     ) {
 
-        Specification<Movie> spec = Specification
-                .where(MovieSpecification.hasGenre(genre))
-                .and(MovieSpecification.titleContains(search));
+        Specification<Movie> spec =
+                (root, query, cb) -> cb.conjunction();
+
+        if (genre != null && !genre.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("genre"), genre));
+        }
+
+        if (search != null && !search.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(
+                            cb.lower(root.get("title")),
+                            "%" + search.toLowerCase() + "%"
+                    ));
+        }
 
         return movieRepository.findAll(spec, pageable)
                 .map(this::mapToResponse);

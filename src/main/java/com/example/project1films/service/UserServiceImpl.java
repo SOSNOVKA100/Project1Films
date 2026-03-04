@@ -7,6 +7,9 @@ import com.example.project1films.entity.User;
 import com.example.project1films.repository.UserRepository;
 import com.example.project1films.security.EncryptionService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,21 +31,37 @@ public class UserServiceImpl implements UserService {
     public UserResponse getUser(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return mapToResponse(user);
     }
 
-
-
     @Override
-    public List<UserResponse> getAllUsers() {
+    public Page<UserResponse> getUsers(
+            String role,
+            String search,
+            Pageable pageable) {
 
-        return userRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
+        Specification<User> spec = (root, query, cb) -> cb.conjunction();
+        if (role != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("role"), role));
+        }
+
+        if (search != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.like(
+                            cb.lower(root.get("name")),
+                            "%" + search.toLowerCase() + "%"
+                    ));
+        }
+
+        return userRepository.findAll(spec, pageable)
+                .map(this::mapToResponse);
     }
+
+
+
 
     @Override
     public void deleteUser(Long id) {

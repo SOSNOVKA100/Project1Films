@@ -4,6 +4,8 @@ import com.example.project1films.dto.request.UserCreateRequest;
 import com.example.project1films.dto.response.UserResponse;
 import com.example.project1films.service.UserService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,11 +34,13 @@ public class UserControllerWithService {
     }
 
 
-
     @GetMapping
-    public List<UserResponse> getAllUsers() {
-
-        return userService.getAllUsers();
+    public Page<UserResponse> getUsers(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String search,
+            Pageable pageable
+    ) {
+        return userService.getUsers(role, search, pageable);
     }
 
     @DeleteMapping("/{id}")

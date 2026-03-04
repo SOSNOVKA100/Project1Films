@@ -9,6 +9,9 @@ import com.example.project1films.repository.RentalRepository;
 import com.example.project1films.repository.UserRepository;
 import com.example.project1films.repository.MovieRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,10 +47,26 @@ public class RentalServiceImpl implements RentalService {
     }
 
     @Override
-    public List<RentalResponse> getAllRentals() {
-        return rentalRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<RentalResponse> getRentals(
+            Long userId,
+            Long movieId,
+            Pageable pageable) {
+
+        Specification<Rental> spec =
+                (root, query, cb) -> cb.conjunction();
+
+        if (userId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("user").get("id"), userId));
+        }
+
+        if (movieId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("movie").get("id"), movieId));
+        }
+
+        return rentalRepository.findAll(spec, pageable)
+                .map(this::mapToResponse);
     }
 
     @Override

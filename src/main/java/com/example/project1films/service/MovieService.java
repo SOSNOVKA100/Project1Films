@@ -7,12 +7,10 @@ import com.example.project1films.dto.response.MovieResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import com.example.project1films.specification.MovieSpecification;
 import java.util.List;
 
 public interface MovieService {
     MovieResponse createMovie(MovieCreateRequest request);
-    List<MovieResponse> getAllMovies();
     MovieResponse getMovie(Long id);
     MovieResponse updateMovie(Long id, MovieUpdateRequest request);
     void deleteMovie(Long id);
