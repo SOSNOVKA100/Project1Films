@@ -4,23 +4,29 @@ import com.example.project1films.dto.request.MovieCreateRequest;
 import com.example.project1films.dto.request.MovieUpdateRequest;
 import com.example.project1films.dto.response.MovieResponse;
 import com.example.project1films.entity.Movie;
+import com.example.project1films.entity.mongo.MovieDocument;
 import com.example.project1films.repository.MovieRepository;
+import com.example.project1films.repository.mongo.MovieMongoRepository;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MovieServiceImpl implements MovieService {
 
     private final MovieRepository movieRepository;
+    private final MovieMongoRepository movieMongoRepository;
 
-    public MovieServiceImpl(MovieRepository movieRepository) {
+    public MovieServiceImpl(MovieRepository movieRepository,
+                            MovieMongoRepository movieMongoRepository) {
         this.movieRepository = movieRepository;
+        this.movieMongoRepository = movieMongoRepository;
     }
+
+    // ================= PostgreSQL =================
 
     @Override
     public MovieResponse createMovie(MovieCreateRequest request) {
@@ -32,8 +38,6 @@ public class MovieServiceImpl implements MovieService {
         Movie saved = movieRepository.save(movie);
         return mapToResponse(saved);
     }
-
-
 
     @Override
     public MovieResponse getMovie(Long id) {
@@ -60,14 +64,6 @@ public class MovieServiceImpl implements MovieService {
         movieRepository.deleteById(id);
     }
 
-    private MovieResponse mapToResponse(Movie movie) {
-        MovieResponse response = new MovieResponse();
-        response.setId(movie.getId());
-        response.setTitle(movie.getTitle());
-        response.setGenre(movie.getGenre());
-        response.setAvailable(movie.getAvailable());
-        return response;
-    }
     @Override
     public Page<MovieResponse> getMovies(
             String genre,
@@ -95,4 +91,40 @@ public class MovieServiceImpl implements MovieService {
                 .map(this::mapToResponse);
     }
 
+    // ================= MongoDB =================
+
+    @Override
+    public void saveMovieToMongo(MovieCreateRequest request) {
+        MovieDocument doc = new MovieDocument();
+        doc.setTitle(request.getTitle());
+        doc.setGenre(request.getGenre());
+        doc.setAvailable(request.getAvailable() != null ? request.getAvailable() : true);
+
+        movieMongoRepository.save(doc);
+    }
+
+    @Override
+    public Page<MovieResponse> getMoviesFromMongo(Pageable pageable) {
+        return movieMongoRepository.findAll(pageable)
+                .map(this::mapToResponseMongo);
+    }
+
+    // ================= Mappers =================
+
+    private MovieResponse mapToResponse(Movie movie) {
+        MovieResponse response = new MovieResponse();
+        response.setId(movie.getId());
+        response.setTitle(movie.getTitle());
+        response.setGenre(movie.getGenre());
+        response.setAvailable(movie.getAvailable());
+        return response;
+    }
+
+    private MovieResponse mapToResponseMongo(MovieDocument doc) {
+        MovieResponse response = new MovieResponse();
+        response.setTitle(doc.getTitle());
+        response.setGenre(doc.getGenre());
+        response.setAvailable(doc.getAvailable());
+        return response;
+    }
 }

@@ -9,6 +9,6 @@ import java.util.Optional;
 public interface UserRepository
         extends JpaRepository<User, Long>,
         JpaSpecificationExecutor<User> {
-    Optional<User> findByEmail(String email);//Ошибка совпадения почты
+    Optional<User> findByEmail(String email);
 
 }

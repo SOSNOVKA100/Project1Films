@@ -54,6 +54,18 @@ public class MovieControllerWithService {
         return movieService.getMovies(genre, search, pageable);
     }
 
+
+    @PostMapping("/mongo")
+    public void saveToMongo(@RequestBody MovieCreateRequest request) {
+        movieService.saveMovieToMongo(request);
+    }
+
+    @GetMapping("/mongo")
+    public Page<MovieResponse> getFromMongo(Pageable pageable) {
+        return movieService.getMoviesFromMongo(pageable);
+    }
+
+
     // old @GetMapping
     // public List<MovieResponse> getAllMovies() {
     //    return movieService.getAllMovies();
