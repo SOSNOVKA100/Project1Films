@@ -31,36 +31,38 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String path = request.getServletPath();
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-
-            try {
-                Claims claims = Jwts.parserBuilder()
-                        .setSigningKey(secretKey)
-                        .build()
-                        .parseClaimsJws(token)
-                        .getBody();
-
-                // Можно достать email пользователя
-                String email = claims.getSubject();
-                request.setAttribute("email", email);
-
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Invalid or expired JWT");
-                return;
-            }
-        } else {
-            // Если нет токена → 401 для защищённых эндпоинтов
-            if (request.getRequestURI().startsWith("/users")) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Missing Authorization header");
-                return;
-            }
+        if (path.startsWith("/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        filterChain.doFilter(request, response);
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Missing Authorization header");
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String email = claims.getSubject();
+            request.setAttribute("email", email);
+
+            filterChain.doFilter(request, response);
+
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid or expired JWT");
+        }
     }
 }

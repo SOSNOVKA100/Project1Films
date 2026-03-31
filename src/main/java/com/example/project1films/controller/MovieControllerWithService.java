@@ -4,12 +4,10 @@ import com.example.project1films.dto.request.MovieCreateRequest;
 import com.example.project1films.dto.request.MovieUpdateRequest;
 import com.example.project1films.dto.response.MovieResponse;
 import com.example.project1films.service.MovieService;
+import jakarta.validation.Valid;  // ← Добавьте этот импорт
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-
 import org.springframework.web.bind.annotation.*;
-
-
 
 @RestController
 @RequestMapping("/api/movies")
@@ -22,11 +20,9 @@ public class MovieControllerWithService {
     }
 
     @PostMapping
-    public MovieResponse createMovie(@RequestBody MovieCreateRequest request) {
+    public MovieResponse createMovie(@Valid @RequestBody MovieCreateRequest request) { // ← Добавлен @Valid
         return movieService.createMovie(request);
     }
-
-
 
     @GetMapping("/{id}")
     public MovieResponse getMovie(@PathVariable Long id) {
@@ -35,7 +31,7 @@ public class MovieControllerWithService {
 
     @PutMapping("/{id}")
     public MovieResponse updateMovie(@PathVariable Long id,
-                                     @RequestBody MovieUpdateRequest request) {
+                                     @Valid @RequestBody MovieUpdateRequest request) { // ← Добавлен @Valid
         return movieService.updateMovie(id, request);
     }
 
@@ -43,7 +39,6 @@ public class MovieControllerWithService {
     public void deleteMovie(@PathVariable Long id) {
         movieService.deleteMovie(id);
     }
-
 
     @GetMapping
     public Page<MovieResponse> getMovies(
@@ -54,9 +49,8 @@ public class MovieControllerWithService {
         return movieService.getMovies(genre, search, pageable);
     }
 
-
     @PostMapping("/mongo")
-    public void saveToMongo(@RequestBody MovieCreateRequest request) {
+    public void saveToMongo(@Valid @RequestBody MovieCreateRequest request) { // ← Добавлен @Valid
         movieService.saveMovieToMongo(request);
     }
 
@@ -64,10 +58,4 @@ public class MovieControllerWithService {
     public Page<MovieResponse> getFromMongo(Pageable pageable) {
         return movieService.getMoviesFromMongo(pageable);
     }
-
-
-    // old @GetMapping
-    // public List<MovieResponse> getAllMovies() {
-    //    return movieService.getAllMovies();
-    //  }
 }

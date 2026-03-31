@@ -3,6 +3,7 @@ package com.example.project1films.dto.response;
 import java.time.LocalDate;
 
 public class RentalResponse {
+
     private Long id;
     private Long userId;
     private String userName;
@@ -10,7 +11,7 @@ public class RentalResponse {
     private String movieTitle;
     private LocalDate rentDate;
 
-    // Getters / Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -1,12 +1,13 @@
 package com.example.project1films.dto.response;
 
 public class MovieResponse {
+
     private Long id;
     private String title;
     private String genre;
     private Boolean available;
 
-    // Getters / Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
