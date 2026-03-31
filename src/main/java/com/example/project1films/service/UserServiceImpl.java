@@ -10,6 +10,7 @@ import com.example.project1films.security.EncryptionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,13 +19,14 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final EncryptionService encryptionService;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository,
-                           EncryptionService encryptionService) {
+                           EncryptionService encryptionService,
+                           PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
-        this.encryptionService = encryptionService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -76,9 +78,7 @@ public class UserServiceImpl implements UserService {
         response.setId(user.getId());
         response.setName(user.getName());
 
-        response.setEmail(
-                encryptionService.decrypt(user.getEmail())
-        );
+        response.setEmail(user.getEmail());
 
         response.setRole(user.getRole());
 
@@ -90,10 +90,15 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setName(request.getName());
-        user.setRole(request.getRole());
+        user.setRole(
+                request.getRole() != null ? request.getRole() : "USER"
+        );
 
         // Шифруем email
-        user.setEmail(encryptionService.encrypt(request.getEmail()));
+        user.setEmail(request.getEmail());
+        user.setPassword(
+                passwordEncoder.encode(request.getPassword())
+        );
 
         User saved = userRepository.save(user);
 
@@ -109,24 +114,33 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
 
+
+
         if (request.getName() != null) {
             user.setName(request.getName());
         }
 
         if (request.getEmail() != null) {
 
-            String encryptedEmail =
-                    encryptionService.encrypt(request.getEmail());
+            //  String encryptedEmail =
+             //       encryptionService.encrypt(request.getEmail());
 
-            user.setEmail(encryptedEmail);
-        }
+            user.setEmail(request.getEmail());        }
 
         if (request.getRole() != null) {
             user.setRole(request.getRole());
         }
 
+        if (request.getPassword() != null) {
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword())
+            );
+        }
+
         User updated = userRepository.save(user);
 
         return mapToResponse(updated);
+
+
     }
 }
