@@ -28,7 +28,6 @@ public interface ErrorLogRepository extends MongoRepository<ErrorLog, String> {
     // Search IP client
     Page<ErrorLog> findByClientIp(String clientIp, Pageable pageable);
 
-    //  количество ошибок по типам за последние 24 часа
     @Query(value = "{ 'timestamp': { $gte: ?0 } }",
             count = true,
             fields = "{ 'errorType': 1 }")

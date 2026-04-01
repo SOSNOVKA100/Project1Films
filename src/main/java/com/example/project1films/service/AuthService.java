@@ -37,7 +37,6 @@ public class AuthService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.asyncNotificationService = asyncNotificationService;
-        // Используем тот же ключ, что и в JwtFilter
         this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
     }
 
@@ -57,17 +56,17 @@ public class AuthService {
         user.setRole(request.getRole() != null ? request.getRole() : "USER");
 
         User savedUser = userRepository.save(user);
-        logger.info("User registered successfully with id: {}", savedUser.getId());
+        logger.info("User registered successfully with id: {}, role: {}", savedUser.getId(), savedUser.getRole());
 
         UserResponse userResponse = mapToUserResponse(savedUser);
         asyncNotificationService.sendWelcomeEmailAsync(userResponse);
         asyncNotificationService.logUserActionAsync(
                 savedUser.getId(),
                 "REGISTER",
-                "New user registered"
+                "New user registered with role: " + savedUser.getRole()
         );
 
-        return generateToken(savedUser.getEmail());
+        return generateToken(savedUser.getEmail(), savedUser.getRole());
     }
 
     public String login(String email, String rawPassword) throws Exception {
@@ -80,18 +79,24 @@ public class AuthService {
             throw new Exception("Invalid password");
         }
 
-        logger.info("User logged in successfully: {}", email);
+        logger.info("User logged in successfully: {}, role: {}", email, user.getRole());
 
-        return generateToken(user.getEmail());
+        return generateToken(user.getEmail(), user.getRole());
     }
 
-    private String generateToken(String email) {
-        return Jwts.builder()
+    private String generateToken(String email, String role) {
+        logger.info("Generating token for email: {}, role: {}", email, role);
+
+        String token = Jwts.builder()
                 .setSubject(email)
+                .claim("role", role)  // ← ДОБАВЛЯЕМ РОЛЬ
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(secretKey)
                 .compact();
+
+        logger.info("Token generated successfully");
+        return token;
     }
 
     private UserResponse mapToUserResponse(User user) {
