@@ -30,6 +30,10 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
+                        .requestMatchers("/api/files/download/**").permitAll()
+                        .requestMatchers("/api/files/preview/**").permitAll()
+                        .requestMatchers("/api/files/**").authenticated()
+
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         .requestMatchers("/logs/**").hasRole("ADMIN")
