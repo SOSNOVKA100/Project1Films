@@ -11,13 +11,14 @@ import com.example.project1films.repository.MovieRepository;
 import com.example.project1films.repository.mongo.MovieMongoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -40,6 +41,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "movies", allEntries = true)
     public MovieResponse createMovie(MovieCreateRequest request) {
         logger.info("Creating movie with title: {}", request.getTitle());
 
@@ -58,7 +60,7 @@ public class MovieServiceImpl implements MovieService {
         MovieResponse response = mapToResponse(saved);
 
         asyncNotificationService.logUserActionAsync(
-                null, // Можно добавить текущего пользователя
+                null,
                 "CREATE_MOVIE",
                 "Movie created: " + saved.getTitle()
         );
@@ -67,8 +69,9 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
+    @Cacheable(value = "movies", key = "#id")
     public MovieResponse getMovie(Long id) {
-        logger.debug("Fetching movie with id: {}", id);
+        logger.info("Fetching movie from DATABASE (not cache): id={}", id);
 
         Movie movie = movieRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Movie not found with id: " + id));
@@ -78,6 +81,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     @Transactional
+    @CachePut(value = "movies", key = "#id")
     public MovieResponse updateMovie(Long id, MovieUpdateRequest request) {
         logger.info("Updating movie with id: {}", id);
 
@@ -122,6 +126,7 @@ public class MovieServiceImpl implements MovieService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "movies", key = "#id")
     public void deleteMovie(Long id) {
         logger.info("Deleting movie with id: {}", id);
 
@@ -140,8 +145,9 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
+    @Cacheable(value = "movies", key = "'list_' + #genre + '_' + #search + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<MovieResponse> getMovies(String genre, String search, Pageable pageable) {
-        logger.debug("Fetching movies with genre: {}, search: {}", genre, search);
+        logger.info("Fetching movies from DATABASE (not cache): genre={}, search={}", genre, search);
 
         Specification<Movie> spec = (root, query, cb) -> cb.conjunction();
 
@@ -162,6 +168,7 @@ public class MovieServiceImpl implements MovieService {
     // ================= MongoDB =================
 
     @Override
+    @CacheEvict(value = "movies", allEntries = true)
     public void saveMovieToMongo(MovieCreateRequest request) {
         logger.info("Saving movie to MongoDB: {}", request.getTitle());
 

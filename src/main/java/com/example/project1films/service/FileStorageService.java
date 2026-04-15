@@ -9,6 +9,8 @@ import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
@@ -35,7 +37,7 @@ public class FileStorageService {
     @Value("${file.max-size:10485760}")
     private long maxFileSize;
 
-    @Value("${file.allowed-types:image/jpeg,image/png,image/jpg}")
+    @Value("${file.allowed-types:image/jpeg,image/png,image/jpg,application/pdf,text/plain}")
     private List<String> allowedContentTypes;
 
     public FileStorageService(GridFsTemplate gridFsTemplate,
@@ -50,6 +52,7 @@ public class FileStorageService {
 
     // ================= UPLOAD =================
 
+    @CacheEvict(value = "files", allEntries = true)
     public FileResponse uploadFile(MultipartFile file, String category,
                                    String entityId, String description,
                                    String uploadedBy) {
@@ -64,7 +67,6 @@ public class FileStorageService {
             metadata.put("originalName", file.getOriginalFilename());
             metadata.put("description", description != null ? description : "");
 
-            // save to GridFS
             ObjectId fileId = gridFsTemplate.store(
                     file.getInputStream(),
                     file.getOriginalFilename(),
@@ -72,7 +74,6 @@ public class FileStorageService {
                     metadata
             );
 
-            // save metadata
             FileMetadata fileMetadata = new FileMetadata();
             fileMetadata.setFileId(fileId.toString());
             fileMetadata.setOriginalFileName(file.getOriginalFilename());
@@ -90,7 +91,6 @@ public class FileStorageService {
             logger.info("File uploaded successfully: {} with ID: {}",
                     file.getOriginalFilename(), fileId);
 
-            // Асинхронное логирование
             asyncNotificationService.logUserActionAsync(
                     null, "FILE_UPLOAD",
                     String.format("File uploaded: %s, category: %s, size: %d bytes",
@@ -134,17 +134,14 @@ public class FileStorageService {
 
     // ================= DELETE =================
 
+    @CacheEvict(value = "files", key = "#fileId")
     public void deleteFile(String fileId) {
         try {
-            // delete from GridFS
             gridFsTemplate.delete(Query.query(Criteria.where("_id").is(new ObjectId(fileId))));
-
-            // delete detadata
             fileMetadataRepository.deleteByFileId(fileId);
 
             logger.info("File deleted successfully: {}", fileId);
 
-            // asyn logging
             asyncNotificationService.logUserActionAsync(
                     null, "FILE_DELETE",
                     "File deleted: " + fileId
@@ -158,7 +155,10 @@ public class FileStorageService {
 
     // ================= GET FILE INFO =================
 
+    @Cacheable(value = "files", key = "#fileId")
     public Map<String, Object> getFileInfo(String fileId) {
+        logger.info("Fetching file info from DATABASE (not cache): fileId={}", fileId);
+
         try {
             GridFSFile gridFSFile = gridFsTemplate.findOne(
                     Query.query(Criteria.where("_id").is(new ObjectId(fileId)))

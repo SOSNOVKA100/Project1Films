@@ -9,6 +9,9 @@ import com.example.project1films.exception.ResourceNotFoundException;
 import com.example.project1films.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,11 +39,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CacheEvict(value = {"rentals", "movies"}, allEntries = true)
     @Transactional
     public UserResponse createUser(UserCreateRequest request) {
         logger.info("Creating user with email: {}", request.getEmail());
 
-        // Проверка на дубликат email
         Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
         if (existingUser.isPresent()) {
             throw new DuplicateResourceException("User with email " + request.getEmail() + " already exists");
@@ -69,6 +72,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "#id")
     public UserResponse getUser(Long id) {
         logger.debug("Fetching user with id: {}", id);
 
@@ -79,6 +83,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "'list_' + #role + '_' + #search + '_' + #pageable.pageNumber")
     public Page<UserResponse> getUsers(String role, String search, Pageable pageable) {
         logger.debug("Fetching users with role: {}, search: {}", role, search);
 
@@ -99,7 +104,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+
     @Transactional
+    @CacheEvict(value = "users", key = "#id")
     public void deleteUser(Long id) {
         logger.info("Deleting user with id: {}", id);
 
@@ -115,6 +122,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CachePut(value = "users", key = "#id")
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         logger.info("Updating user with id: {}", id);
 

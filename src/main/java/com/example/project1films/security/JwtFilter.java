@@ -70,7 +70,7 @@ public class JwtFilter extends OncePerRequestFilter {
             String role = claims.get("role", String.class);
             if (role == null) role = "USER"; // если роль не указана, по умолчанию USER
 
-            logger.info("✅ Token validated: email={}, role={}", email, role);
+            logger.info("Token validated: email={}, role={}", email, role);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(

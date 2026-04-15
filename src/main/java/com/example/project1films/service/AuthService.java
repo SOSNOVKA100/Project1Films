@@ -28,16 +28,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AsyncNotificationService asyncNotificationService;
     private final SecretKey secretKey;
-    private final long EXPIRATION_TIME = 86400000; // 24 hours
+    private final long expirationTime;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AsyncNotificationService asyncNotificationService,
-                       @Value("${jwt.secret}") String secret) {
+                       @Value("${jwt.secret}") String secret,
+                       @Value("${jwt.expiration}") long expirationTime) {  // добавляем параметр
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.asyncNotificationService = asyncNotificationService;
         this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
+        this.expirationTime = expirationTime;
+        logger.info("JWT expiration time set to: {} ms ({} hours)", expirationTime, expirationTime / 3600000);
     }
 
     @Transactional
@@ -87,11 +90,16 @@ public class AuthService {
     private String generateToken(String email, String role) {
         logger.info("Generating token for email: {}, role: {}", email, role);
 
+        Date issuedAt = new Date();
+        Date expiration = new Date(System.currentTimeMillis() + expirationTime);
+
+        logger.info("Token issued at: {}, expires at: {}", issuedAt, expiration);
+
         String token = Jwts.builder()
                 .setSubject(email)
-                .claim("role", role)  // ← ДОБАВЛЯЕМ РОЛЬ
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .claim("role", role)
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
                 .signWith(secretKey)
                 .compact();
 

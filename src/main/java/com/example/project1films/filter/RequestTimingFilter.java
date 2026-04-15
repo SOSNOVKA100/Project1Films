@@ -25,7 +25,7 @@ public class RequestTimingFilter implements Filter {
             long startTime = (Long) httpRequest.getAttribute("startTime");
             long duration = System.currentTimeMillis() - startTime;
 
-            if (duration > 1000) { // Если запрос выполняется дольше 1 секунды
+            if (duration > 1000) { // 1 sec
                 System.out.printf("Slow request: %s %s took %d ms%n",
                         httpRequest.getMethod(),
                         httpRequest.getRequestURI(),

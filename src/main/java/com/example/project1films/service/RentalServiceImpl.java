@@ -12,6 +12,8 @@ import com.example.project1films.repository.RentalRepository;
 import com.example.project1films.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +42,7 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"rentals", "movies"}, allEntries = true)
     public RentalResponse createRental(RentalCreateRequest request) {
         logger.info("Creating rental for user: {}, movie: {}", request.getUserId(), request.getMovieId());
 
@@ -84,8 +87,9 @@ public class RentalServiceImpl implements RentalService {
     }
 
     @Override
+    @Cacheable(value = "rentals", key = "#userId + '_' + #movieId + '_' + #pageable.pageNumber")
     public Page<RentalResponse> getRentals(Long userId, Long movieId, Pageable pageable) {
-        logger.debug("Fetching rentals with userId: {}, movieId: {}", userId, movieId);
+        logger.info("Fetching rentals from DATABASE (not cache): userId={}, movieId={}", userId, movieId);
 
         Specification<Rental> spec = (root, query, cb) -> cb.conjunction();
 
@@ -104,8 +108,9 @@ public class RentalServiceImpl implements RentalService {
     }
 
     @Override
+    @Cacheable(value = "rentals", key = "#id")
     public RentalResponse getRental(Long id) {
-        logger.debug("Fetching rental with id: {}", id);
+        logger.info("Fetching rental from DATABASE (not cache): id={}", id);
 
         Rental rental = rentalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rental not found with id: " + id));
@@ -115,6 +120,7 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"rentals", "movies"}, key = "#id")
     public void deleteRental(Long id) {
         logger.info("Deleting rental with id: {}", id);
 
