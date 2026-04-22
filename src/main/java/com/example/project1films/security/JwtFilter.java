@@ -20,12 +20,23 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
     private final SecretKey secretKey;
+
+    // Публичные пути, которые не требуют токена
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/swagger-resources",
+            "/webjars",
+            "/error"
+    );
 
     public JwtFilter(@Value("${jwt.secret}") String secret) {
         this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
@@ -41,10 +52,13 @@ public class JwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         logger.debug("Processing request: {} {}", request.getMethod(), path);
 
-        if (path.startsWith("/auth/")) {
-            logger.debug("Skipping JWT check for auth endpoint");
-            filterChain.doFilter(request, response);
-            return;
+        // Проверяем, является ли путь публичным
+        for (String publicPath : PUBLIC_PATHS) {
+            if (path.startsWith(publicPath)) {
+                logger.debug("Skipping JWT check for public path: {}", path);
+                filterChain.doFilter(request, response);
+                return;
+            }
         }
 
         String authHeader = request.getHeader("Authorization");
@@ -52,7 +66,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             logger.warn("Missing or invalid Authorization header for path: {}", path);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Missing Authorization header");
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Missing Authorization header\"}");
             return;
         }
 
@@ -68,7 +83,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
-            if (role == null) role = "USER"; // если роль не указана, по умолчанию USER
+            if (role == null) role = "USER";
 
             logger.info("Token validated: email={}, role={}", email, role);
 
@@ -91,7 +106,8 @@ public class JwtFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             logger.error("JWT validation failed: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid or expired JWT");
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid or expired JWT\"}");
         }
     }
 }

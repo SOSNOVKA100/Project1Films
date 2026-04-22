@@ -26,10 +26,19 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger UI endpoints (разрешаем без токена)
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+
                         // no token acces
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
-
                         .requestMatchers("/api/files/download/**").permitAll()
                         .requestMatchers("/api/files/preview/**").permitAll()
                         .requestMatchers("/api/files/**").authenticated()
