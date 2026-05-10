@@ -1,6 +1,9 @@
 package com.example.project1films.entity;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Entity
 @Table(name = "movies")
@@ -18,6 +21,13 @@ public class Movie {
     @Column(nullable = false)
     private Boolean available = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id")
+    private Author author;
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Review> reviews = new ArrayList<>();
+
     public Movie() {}
 
     // Getters / Setters
@@ -32,4 +42,10 @@ public class Movie {
 
     public Boolean getAvailable() { return available; }
     public void setAvailable(Boolean available) { this.available = available; }
+
+    public Author getAuthor() { return author; }
+    public void setAuthor(Author author) { this.author = author; }
+
+    public List<Review> getReviews() { return reviews; }
+    public void setReviews(List<Review> reviews) { this.reviews = reviews; }
 }
